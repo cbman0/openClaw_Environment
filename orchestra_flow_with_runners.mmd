@@ -1,0 +1,118 @@
+flowchart TD
+    %% ==================== MAIN SPINE ====================
+    Start([START])
+        --> Ingestion[TASK INGESTION]
+        --> Orc[ORCHESTRATOR]
+        --> Decomp[DECOMPOSE TASK INTO SUBTASKS]
+        --> Assign[DELEGATE TO RUNNER AGENTS]
+
+    %% ==================== RUNNER AGENTS (Communication + Logging Layer) ====================
+    subgraph "RUNNER AGENTS"
+        direction LR
+        ORcR[ORCHESTRATOR RUNNER]
+        ArcR[ARCHITECT RUNNER]
+        TSMR[TOOLSMITH RUNNER]
+        ImpR[IMPLEMENTER RUNNER]
+        TestR[TESTER RUNNER]
+        RevR[REVIEWER RUNNER]
+        SecR[SECRETARY RUNNER]
+        TOAR[TIMEOUT ADVISOR RUNNER]
+    end
+
+    Assign --> SpecialistsRunners[" "]
+    SpecialistsRunners --> Monitor[PROGRESS MONITOR]
+
+    %% Runners spawn worker sub-agents and log
+    ORcR -->|manages| OrcWorker[Orchestrator Worker]
+    ArcR -->|manages| ArcWorker[Architect Worker]
+    TSMR -->|manages| TSMWorker[Toolsmith Worker]
+    ImpR -->|manages| ImpWorker[Implementer Worker]
+    TestR -->|manages| TestWorker[Tester Worker]
+    RevR -->|manages| RevWorker[Reviewer Worker]
+
+    %% Logging subsystem
+    subgraph "LOGGING & STORAGE"
+        LogDir[local: ~/.openclaw/workspace/logs/]
+        LogFiles[runner-*.log, worker-*.log]
+        Rotate[Log rotation / archival]
+    end
+    ORcR -.->|writes| LogDir
+    ArcR -.->|writes| LogDir
+    TSMR -.->|writes| LogDir
+    ImpR -.->|writes| LogDir
+    TestR -.->|writes| LogDir
+    RevR -.->|writes| LogDir
+    OrcWorker -.->|writes| LogDir
+    ArcWorker -.->|writes| LogDir
+    TSMWorker -.->|writes| LogDir
+    ImpWorker -.->|writes| LogDir
+    TestWorker -.->|writes| LogDir
+    RevWorker -.->|writes| LogDir
+    LogDir --> LogFiles
+    LogFiles --> Rotate
+
+    %% ==================== MONITORING & CONTROL ====================
+    subgraph "MONITORING & CONTROL"
+        SecR[SECRETARY RUNNER]
+            -->|audits| Audit[AUDITS + LOG REVIEW]
+        SecR
+            -->|detects silence| SilenceQ{SILENCE 10-20 min?}
+
+        SilenceQ
+            -->|YES| Prio[PRIORITY RE-ADJUSTMENT]
+        Prio
+            -->|re-route to OrcR| OrcR
+    end
+
+    %% ==================== MAIN MONITORING LOOP ====================
+    Monitor
+        --> Check{ALL SUBTASKS<br>COMPLETE?}
+
+    Check
+        -->|NO| Monitor
+    Check
+        -->|YES| Delivery[FINAL DELIVERY]
+
+    Delivery
+        --> ReviewC[REVIEW CYCLE]
+
+    %% Review Cycle branches
+    ReviewC
+        --> Approved{ }
+    Approved
+        -->|APPROVED| Complete([TASK COMPLETE])
+    Approved
+        -->|REVISIONS NEEDED| OrcR
+
+    %% ==================== ESCALATION PATH ====================
+    subgraph "ESCALATION"
+        EscalateDecision{Stakeholder arbitration<br>needed?}
+        EscalateNode[ESCALATE TO MAIN]
+    end
+
+    OrcR -->|high-stakes| EscalateDecision
+    SecR -->|unresolved audit| EscalateDecision
+    TOAR -->|unresolved timeout| EscalateDecision
+    EscalateDecision -->|YES| EscalateNode
+    EscalateNode --> Main([Main Agent])
+    EscalateDecision -->|NO| Monitor
+
+    %% ==================== TIMEOUT DETECTION ====================
+    subgraph "TIMEOUT DETECTION"
+        TimeoutQ{TIMEOUT DETECTED?}
+            -->|YES| TOAR[TIMEOUT ADVISOR RUNNER]
+        TOAR
+            -->|consults| OrcR
+    end
+
+    %% ==================== STYLING ====================
+    classDef runner fill:#1a3a1a,stroke:#00ff41,color:#e0ffe0,stroke-width:2px
+    classDef process fill:#0a0a0a,stroke:#00ff41,color:#00ff41,stroke-width:2px
+    classDef decision fill:#0a0a0a,stroke:#ffcc00,color:#ffcc00,stroke-width:2px
+    classDef complete fill:#0a0a0a,stroke:#00ff41,color:#00ff41,stroke-width:3px,font-weight:bold
+    classDef subgraphTitle fill:#1a1a1a,color:#00ff41,stroke:#00ff41
+
+    class Start,Ingestion,Orc,Decomp,Assign,Delivery,ReviewC,Design,Tools,Implementation,Testing,Review,Audit,Prio,EscalateNode,Main,Complete process
+    class Check,SilenceQ,TimeoutQ,Approved,EscalateDecision decision
+    class ORcR,ArcR,TSMR,ImpR,TestR,RevR,SecR,TOAR,OrcWorker,ArcWorker,TSMWorker,ImpWorker,TestWorker,RevWorker runner
+    class Complete complete
