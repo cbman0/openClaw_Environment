@@ -1,55 +1,75 @@
 flowchart TD
-    %% Main spine
-    Start([START]) --> Ingestion[TASK INGESTION]
-    Ingestion --> Orchestrator[ORCHESTRATOR]
-    Orchestrator --> Decompose[DECOMPOSE TASK INTO SUBTASKS]
-    Decompose --> Delegate[DELEGATE TO SPECIALIST AGENTS]
+    %% ==================== MAIN SPINE ====================
+    Start([START]) 
+        --> Ingestion[TASK INGESTION]
+        --> Orc[ORCHESTRATOR]
+        --> Decomp[DECOMPOSE TASK INTO SUBTASKS]
+        --> Assign[DELEGATE TO SPECIALIST AGENTS]
 
-    %% Specialists pool ────────────────────────────────────────
+    %% ==================== SPECIALISTS POOL (explicit output nodes) ====================
     subgraph "SPECIALISTS POOL"
         direction LR
-        A["ARCHITECT<br>[Designs]"] --- T["TOOLSMITH<br>[Builds Tools]"]
-        T --- I["IMPLEMENTER<br>[Implementation]"]
-        I --- Test["TESTER<br>[Testing]"]
-        Test --- R["REVIEWER<br>[Reviews]"]
+        Architect[ARCHITECT] -->|Designs| Design[Design]
+        Toolsmith[TOOLSMITH] -->|Builds Tools| Tools[Tools]
+        Implementer[IMPLEMENTER] -->|Implements| Implementation[Implementation]
+        Tester[TESTER] -->|Tests| Testing[Testing]
+        Reviewer[REVIEWER] -->|Reviews| Review[Review]
     end
 
-    Delegate --> SpecialistsPool[" "]
+    Assign --> SpecialistsPool[" "]
     SpecialistsPool --> Monitor[PROGRESS MONITOR]
 
-    %% Monitoring & Control area ───────────────────────────────
+    %% ==================== MONITORING & CONTROL ====================
     subgraph "MONITORING & CONTROL"
-        Secretary["SECRETARY<br>(Audit Agent)"] --> Audits[AUDITS]
-        Secretary --> SilenceDetect[DETECTS SILENCE]
-        SilenceDetect --> SilenceQ{"SILENCE 10-20 min?"}
-        SilenceQ -->|YES| Prio[PRIORITY RE-ADJUSTMENT]
-        Prio -->|Re-route| Orchestrator
+        Sec[SECRETARY] 
+            -->|Audits| Audit[AUDITS]
+        Sec 
+            -->|Detects Silence| SilenceQ{SILENCE 10-20 min?}
+        
+        SilenceQ 
+            -->|YES| Prio[PRIORITY RE-ADJUSTMENT]
+        Prio 
+            -->|Re-route to Orchestrator| Orc
     end
 
-    Monitor --> CompleteQ{"ALL SUBTASKS<br>COMPLETE?"}
+    %% ==================== MAIN MONITORING LOOP ====================
+    Monitor 
+        --> Check{ALL SUBTASKS<br>COMPLETE?}
 
-    CompleteQ -->|NO| Monitor
-    CompleteQ -->|YES| Delivery["FINAL DELIVERY<br>[OK]"]
+    Check 
+        -->|NO| Monitor
+    Check 
+        -->|YES| Delivery[FINAL DELIVERY]
 
-    Delivery --> Review["REVIEW CYCLE<br>[OK]"]
+    Delivery 
+        --> ReviewC[REVIEW CYCLE]
 
-    Review --> Approved{" "}
-    Approved -->|APPROVED| Complete([TASK COMPLETE])
-    Approved -->|REVISIONS NEEDED| Orchestrator
+    %% Review Cycle branches (full feedback loop)
+    ReviewC 
+        --> Approved{ }
+    Approved 
+        -->|APPROVED| Complete([TASK COMPLETE])
+    Approved 
+        -->|REVISIONS NEEDED| Orc
 
-    %% Timeout subsystem (placed at bottom like in retro version)
+    %% ==================== TIMEOUT DETECTION (bottom subsystem) ====================
     subgraph "TIMEOUT DETECTION"
-        TimeoutQ{"TIMEOUT<br>DETECTED?"} -->|YES| Advisor[TIMEOUT ADVISOR]
-        Advisor --> Orchestrator
+        TimeoutQ{TIMEOUT DETECTED?} 
+            -->|YES| Advisor[TIMEOUT ADVISOR]
+        Advisor 
+            -->|Consult| Orc
     end
 
-    %% Layout helpers
+    %% ==================== LAYOUT HELPERS (keeps Monitoring on right + Timeout at bottom) ====================
     Monitor ~~~ MonitoringGroup[" "]
     MonitoringGroup ~~~ TimeoutGroup[" "]
 
-    classDef process fill:#000,color:#0f0,stroke:#0f0
-    classDef decision fill:#000,color:#ff0,stroke:#ff0
-    classDef complete fill:#000,color:#0f0,stroke:#0f0,font-weight:bold
-    class Start,Ingestion,Orchestrator,Decompose,Delegate,Delivery,Review,Complete process
-    class CompleteQ,SilenceQ,TimeoutQ,Approved decision
+    %% ==================== STYLING ====================
+    classDef process fill:#0a0a0a,stroke:#00ff41,color:#00ff41,stroke-width:2px
+    classDef decision fill:#0a0a0a,stroke:#ffcc00,color:#ffcc00,stroke-width:2px
+    classDef complete fill:#0a0a0a,stroke:#00ff41,color:#00ff41,stroke-width:3px,font-weight:bold
+    classDef subgraphTitle fill:#1a1a1a,color:#00ff41,stroke:#00ff41
+
+    class Start,Ingestion,Orc,Decomp,Assign,Delivery,ReviewC,Architect,Toolsmith,Implementer,Tester,Reviewer,Design,Tools,Implementation,Testing,Review,Audit,Prio,Advisor,Complete process
+    class Check,SilenceQ,TimeoutQ,Approved decision
     class Complete complete
