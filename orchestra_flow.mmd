@@ -1,0 +1,55 @@
+flowchart TD
+    %% Main spine
+    Start([START]) --> Ingestion[TASK INGESTION]
+    Ingestion --> Orchestrator[ORCHESTRATOR]
+    Orchestrator --> Decompose[DECOMPOSE TASK INTO SUBTASKS]
+    Decompose --> Delegate[DELEGATE TO SPECIALIST AGENTS]
+
+    %% Specialists pool ────────────────────────────────────────
+    subgraph "SPECIALISTS POOL"
+        direction LR
+        A["ARCHITECT<br>[Designs]"] --- T["TOOLSMITH<br>[Builds Tools]"]
+        T --- I["IMPLEMENTER<br>[Implementation]"]
+        I --- Test["TESTER<br>[Testing]"]
+        Test --- R["REVIEWER<br>[Reviews]"]
+    end
+
+    Delegate --> SpecialistsPool[" "]
+    SpecialistsPool --> Monitor[PROGRESS MONITOR]
+
+    %% Monitoring & Control area ───────────────────────────────
+    subgraph "MONITORING & CONTROL"
+        Secretary["SECRETARY<br>(Audit Agent)"] --> Audits[AUDITS]
+        Secretary --> SilenceDetect[DETECTS SILENCE]
+        SilenceDetect --> SilenceQ{"SILENCE 10-20 min?"}
+        SilenceQ -->|YES| Prio[PRIORITY RE-ADJUSTMENT]
+        Prio -->|Re-route| Orchestrator
+    end
+
+    Monitor --> CompleteQ{"ALL SUBTASKS<br>COMPLETE?"}
+
+    CompleteQ -->|NO| Monitor
+    CompleteQ -->|YES| Delivery["FINAL DELIVERY<br>[OK]"]
+
+    Delivery --> Review["REVIEW CYCLE<br>[OK]"]
+
+    Review --> Approved{" "}
+    Approved -->|APPROVED| Complete([TASK COMPLETE])
+    Approved -->|REVISIONS NEEDED| Orchestrator
+
+    %% Timeout subsystem (placed at bottom like in retro version)
+    subgraph "TIMEOUT DETECTION"
+        TimeoutQ{"TIMEOUT<br>DETECTED?"} -->|YES| Advisor[TIMEOUT ADVISOR]
+        Advisor --> Orchestrator
+    end
+
+    %% Layout helpers
+    Monitor ~~~ MonitoringGroup[" "]
+    MonitoringGroup ~~~ TimeoutGroup[" "]
+
+    classDef process fill:#000,color:#0f0,stroke:#0f0
+    classDef decision fill:#000,color:#ff0,stroke:#ff0
+    classDef complete fill:#000,color:#0f0,stroke:#0f0,font-weight:bold
+    class Start,Ingestion,Orchestrator,Decompose,Delegate,Delivery,Review,Complete process
+    class CompleteQ,SilenceQ,TimeoutQ,Approved decision
+    class Complete complete
