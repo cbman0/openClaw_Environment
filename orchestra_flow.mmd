@@ -52,6 +52,19 @@ flowchart TD
     Approved 
         -->|REVISIONS NEEDED| Orc
 
+    %% ==================== ESCALATION PATH ====================
+    subgraph "ESCALATION"
+        EscalateDecision{Stakeholder arbitration<br>needed?}
+        EscalateNode[ESCALATE TO MAIN]
+    end
+
+    Orc -->|High‑stakes issue| EscalateDecision
+    Sec -->|Unresolved audit issue| EscalateDecision
+    Advisor -->|Unresolved timeout| EscalateDecision
+    EscalateDecision -->|YES| EscalateNode
+    EscalateNode --> Main([Main Agent])
+    EscalateDecision -->|NO| Monitor
+
     %% ==================== TIMEOUT DETECTION (bottom subsystem) ====================
     subgraph "TIMEOUT DETECTION"
         TimeoutQ{TIMEOUT DETECTED?} 
@@ -70,6 +83,6 @@ flowchart TD
     classDef complete fill:#0a0a0a,stroke:#00ff41,color:#00ff41,stroke-width:3px,font-weight:bold
     classDef subgraphTitle fill:#1a1a1a,color:#00ff41,stroke:#00ff41
 
-    class Start,Ingestion,Orc,Decomp,Assign,Delivery,ReviewC,Architect,Toolsmith,Implementer,Tester,Reviewer,Design,Tools,Implementation,Testing,Review,Audit,Prio,Advisor,Complete process
-    class Check,SilenceQ,TimeoutQ,Approved decision
+    class Start,Ingestion,Orc,Decomp,Assign,Delivery,ReviewC,Architect,Toolsmith,Implementer,Tester,Reviewer,Design,Tools,Implementation,Testing,Review,Audit,Prio,Advisor,EscalateNode,Main,Complete process
+    class Check,SilenceQ,TimeoutQ,Approved,EscalateDecision decision
     class Complete complete

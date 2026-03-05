@@ -1,0 +1,84 @@
+flowchart TD
+    %% ==================== USER INTERFACE ====================
+    subgraph "USER CHANNELS"
+        direction TB
+        Telegram[Telegram DM]
+        Webchat[Webchat]
+        TUI[OpenClaw TUI]
+    end
+
+    %% ==================== MAIN SPINE ====================
+    User --> Ingestion[TASK INGESTION]
+    Ingestion --> Main[MAIN AGENT]
+    Main --> Context[Load Context<br/>SOUL.md, MEMORY.md,<br/>IDENTITY.md, USER.md]
+    Context --> Orc[ORCHESTRATOR<br/>(if complex task)]
+    
+    Orc --> Decomp[DECOMPOSE INTO SUBTASKS]
+    Decomp --> Assign[DELEGATE TO SPECIALIST AGENTS]
+    
+    %% ==================== SPECIALIST AGENTS ====================
+    subgraph "AGENT TEAM"
+        direction LR
+        Arc[cbMan0_Architect]
+        Imp[cbMan0_Implementer]
+        Test[cbMan0_Tester]
+        Rev[cbMan0_Reviewer]
+        Tools[cbMan0_Toolsmith]
+        Sec[cbMan0_Secretary]
+        TOA[cbMan0_TimeoutAdvisor]
+    end
+
+    Assign --> Agents[ ]
+    Agents --> Execute[EXECUTE ASSIGNED WORK]
+    
+    %% ==================== HEARTBEAT SYSTEM ====================
+    subgraph "HEARTBEAT MONITORING"
+        direction TB
+        HB[Heartbeat Timer<br/>~1 min interval]
+        HB --> CheckRepo{Check<br/>git log}
+        CheckRepo --> Age{>30 min<br/>since commit?}
+        Age -->|YES| Alert[SEND PROGRESS UPDATE]
+        Age -->|NO| OK[HEARTBEAT_OK]
+    end
+    
+    Main -.->|monitors| HB
+
+    %% ==================== MEMORY & CONTINUITY ====================
+    subgraph "MEMORY SYSTEM"
+        MEM[MEMORY.md<br/>Long-term archive]
+        Daily[memory/YYYY-MM-DD.md<br/>Daily logs]
+        ID[IDENTITY.md<br/>Agent persona]
+        SOUL[SOUL.md<br/>Core values]
+        USER[USER.md<br/>User preferences]
+    end
+    
+    Main -.->|reads/writes| MEM
+    Main -.->|reads/writes| Daily
+
+    %% ==================== WORKFLOW ====================
+    Execute --> Review{REVIEW<br/>NEEDED?}
+    Review -->|YES| Rev
+    Rev -->|comments| Execute
+    Review -->|NO| Done{DONE?}
+    Done -->|NO| Execute
+    Done -->|YES| Delivery[DELIVER TO USER]
+
+    %% ==================== ESCALATION ====================
+    subgraph "ESCALATION PATHS"
+        TOA -.->|timeout detected| Main
+        Sec -.->|audit issue| Main
+        Rev -.->|blocker| Main
+    end
+
+    %% ==================== STYLING ====================
+    classDef agent fill:#1a3a1a,stroke:#00ff41,color:#e0ffe0,stroke-width:2px
+    classDef process fill:#0a0a0a,stroke:#00ff41,color:#00ff41,stroke-width:2px
+    classDef decision fill:#0a0a0a,stroke:#ffcc00,color:#ffcc00,stroke-width:2px
+    classDef memory fill:#0a1a2a,stroke:#4169e1,color:#87ceeb,stroke-width:2px
+    classDef complete fill:#0a0a0a,stroke:#00ff41,color:#00ff41,stroke-width:3px,font-weight:bold
+    
+    class Ingestion,Context,Decomp,Assign,Execute,Delivery,Alert,OK process
+    class CheckRepo,Age,Review,Done decision
+    class Arc,Imp,Test,Rev,Tools,Sec,TOA agent
+    class MEM,Daily,ID,SOUL,USER memory
+    class Delivery complete
